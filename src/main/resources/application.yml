@@ -1,0 +1,16 @@
+server:
+  port: 8122
+spring:
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+  profiles:
+    active: dev
+  resources:
+    static-locations: classpath:/templates,classpath:/static
+plaintext: lowi
+
+logging:
+  file:
+    path: ./logs/admin
+  config: classpath:logback-spring.xml
