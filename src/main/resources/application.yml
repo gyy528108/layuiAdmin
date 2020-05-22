@@ -10,7 +10,11 @@ spring:
     static-locations: classpath:/templates,classpath:/static
 plaintext: lowi
 
+
 logging:
   file:
     path: ./logs/admin
   config: classpath:logback-spring.xml
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #打印sql

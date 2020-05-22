@@ -1,8 +1,13 @@
 package com.lowi.admin.service;
 
 import cn.hutool.core.util.RandomUtil;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.lowi.admin.dao.IpDataDao;
+import com.lowi.admin.dao.LoginLogDao;
 import com.lowi.admin.dao.UserDao;
+import com.lowi.admin.entity.IpData;
+import com.lowi.admin.entity.LoginLog;
 import com.lowi.admin.entity.User;
 import com.lowi.admin.pojo.dto.UserDto;
 import com.lowi.admin.utils.Md5Utils;
@@ -15,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,6 +42,10 @@ public class UserService {
     private UserDao userDao;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private IpDataDao ipDataDao;
+    @Autowired
+    private LoginLogDao loginLogDao;
 
     public Result registerUser(UserDto userDto) {
         Result responseResult = new Result();
@@ -81,6 +91,7 @@ public class UserService {
         responseResult.setMsg("注册成功");
         return responseResult;
     }
+
     @Transactional
     public Result<User> loginUser(UserDto userDto) {
         Result<User> responseResult = new Result<User>();
@@ -91,6 +102,33 @@ public class UserService {
             responseResult.setMsg("用户不存在或密码错误");
             return responseResult;
         }
+        LoginLog loginLog = new LoginLog();
+        String[] split = userDto.getLoginIp().split("\\.");
+        if (split.length > 0) {
+            String ipAddr = "";
+            StringBuilder ip = new StringBuilder();
+            for (int i = 0; i < split.length; i++) {
+                ip.append(ipToStr(split[i]));
+            }
+            Long ipNum = Long.valueOf(ip.toString());
+            List<IpData> ipAddrList = ipDataDao.getIpAddr(ipNum);
+            if (ipAddrList.size() > 0) {
+                String province = ipAddrList.get(0).getProvince();
+                String city = ipAddrList.get(0).getCity();
+                if (province != null) {
+                    ipAddr = province;
+                }
+                if (city != null && !city.equals("")) {
+                    ipAddr = ipAddr + "--" + city;
+                }
+            }
+            loginLog.setLoginAddr(ipAddr);
+        }
+        loginLog.setLoginTime(new Date());
+        loginLog.setLoginIp(userDto.getLoginIp());
+        loginLog.setUserId(userPo.getId());
+        loginLogDao.insert(loginLog);
+
         userDto.setId(userPo.getId());
         userDto.setLastLoginIp(userPo.getLoginIp());
         userDao.updateLoginCount(userDto);
@@ -98,6 +136,16 @@ public class UserService {
         responseResult.setMsg("登录成功");
         responseResult.setData(userPo);
         return responseResult;
+    }
+
+    public String ipToStr(String num) {
+        if (num.length() == 1) {
+            return "00" + num;
+        }
+        if (num.length() == 2) {
+            return "0" + num;
+        }
+        return num;
     }
 
     public Result sendEmailMsg(String email) {
@@ -134,5 +182,16 @@ public class UserService {
     public static void main(String[] args) {
         String numbers = RandomUtil.randomNumbers(6);
         System.out.println("numbers = " + numbers);
+    }
+
+    public Result getUserLoginLog(Integer id) {
+        LoginLog loginLog = new LoginLog();
+        loginLog.setUserId(id);
+        List<LoginLog> loginLogs = loginLogDao.selectList(new QueryWrapper<>(loginLog));
+        Result responseResult = new Result();
+        responseResult.setCode(0);
+        responseResult.setMsg("获取成功");
+        responseResult.setData(loginLogs);
+        return responseResult;
     }
 }

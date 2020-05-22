@@ -32,14 +32,6 @@ import java.util.Map;
 @RequestMapping
 public class IndexController {
     private static final Logger logger = LoggerFactory.getLogger(IndexController.class);
-    @Autowired
-    private TestService testService;
-
-    @RequestMapping("/test")
-    public User getUser() {
-        User user = testService.getUser();
-        return user;
-    }
 
     @RequestMapping()
     public String index() {
@@ -58,10 +50,4 @@ public class IndexController {
         session.removeAttribute("user");
         return "/login";
     }
-
-    @RequestMapping("/user/toTable")
-    public String toUserInfo() {
-        return "/user/table";
-    }
-
 }

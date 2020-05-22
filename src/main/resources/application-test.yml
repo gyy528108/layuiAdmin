@@ -6,7 +6,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 # mybatis-plus
-# mybatis-config.xmlÂ·¾¶ÅäÖÃ
+# mybatis-config.xmlÂ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 mybatis-plus:
   mapper-locations: classpath:/mapper/*.xml
   type-aliases-package: com.lowi.admin.entity
@@ -17,4 +17,4 @@ mybatis-plus:
 
 
 
-localhostUrl: http://7tf2yq.natappfree.cc
+localhostUrl: http://unwwac.natappfree.cc

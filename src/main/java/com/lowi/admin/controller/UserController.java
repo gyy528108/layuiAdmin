@@ -2,15 +2,18 @@ package com.lowi.admin.controller;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
+import com.lowi.admin.dao.IpDataDao;
+import com.lowi.admin.entity.IpData;
+import com.lowi.admin.entity.LoginLog;
 import com.lowi.admin.entity.User;
 import com.lowi.admin.pojo.dto.UserDto;
 import com.lowi.admin.service.UserService;
-import com.lowi.admin.utils.IPUtil;
 import com.lowi.admin.utils.Result;
 import com.lowi.admin.validation.group.UserGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.Errors;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * UserController.java
@@ -39,6 +48,8 @@ public class UserController {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     @Autowired
     private UserService userService;
+    @Autowired
+    IpDataDao ipDataDao;
 
     @RequestMapping("/register")
     public Result register(@RequestBody @Validated(UserGroup.UserRegister.class) UserDto userDto, Errors errors) {
@@ -53,17 +64,34 @@ public class UserController {
         if (errors.hasErrors()) {
             return Result.getError(errors);
         }
-
-        String requestUrlIP = request.getServerName();
         String userIpAddr = request.getRemoteAddr();
+
+        String ipAddr = getIpAddr(request);
+        logger.info("ipAddr = " + ipAddr);
         logger.info("userIpAddr = " + userIpAddr);
-        logger.info("requestUrlIP = " + requestUrlIP);
         userDto.setLoginIp(userIpAddr);
         Result<User> responseResult = userService.loginUser(userDto);
         if (responseResult.getCode() == 0) {
             session.setAttribute("user", responseResult.getData());
         }
         return responseResult;
+    }
+
+    public String getIpAddr(HttpServletRequest request) {
+        String ip = request.getHeader("x-forwarded-for");
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        if (ip.split(",").length > 0) {
+            return ip.split(",")[0];
+        }
+        return ip;
     }
 
     @RequestMapping("/getUserInfo")
@@ -75,6 +103,13 @@ public class UserController {
         responseResult.setData(user);
         return responseResult;
     }
+
+    @RequestMapping("/getUserLoginLog")
+    public Result getUserLoginLog(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        return userService.getUserLoginLog(user.getId());
+    }
+
 
     @RequestMapping("/getInfo")
     public Result getInfo(Integer page, Integer limit, Integer sex, String city, String type) {
@@ -227,4 +262,83 @@ public class UserController {
         return userService.sendEmailMsg(email);
     }
 
+    public static void main(String[] args) {
+        File file = new File("E:/11.txt");
+    }
+
+
+    //    @RequestMapping("/insertIp")
+    public void insertIp() {
+        File file = new File("D:/GoogleDown/ip.txt");
+        txt2String(file);
+    }
+
+    static int count = 0;
+    static int insert = 0;
+
+    @Transactional
+    public void txt2String(File file) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件
+            String s = null;
+            List<IpData> ipDataList = new ArrayList<>();
+            while ((s = br.readLine()) != null) {//使用readLine方法，一次读一行
+                String[] split = s.split(",");
+                count++;
+
+                System.out.println("省份：" + split[3] + " 城市：" + split[4] + " 运营商：" + split[5] + " ip ：" + split[6] + "-" + split[7] + "   count=" + count);
+
+                IpData ipData = new IpData();
+                for (int i = 0; i < split.length; i++) {
+                    ipData.setProvince(split[3]);
+                    ipData.setCity(split[4]);
+                    ipData.setOperator(split[5]);
+                    ipData.setIpStart(split[6]);
+                    ipData.setIpEnd(split[7]);
+                    if (split[6] != null) {
+                        String[] ip = split[6].split("\\.");
+                        String s1 = ipToStr(ip[0]);
+                        String s2 = ipToStr(ip[1]);
+                        String s3 = ipToStr(ip[2]);
+                        String s4 = ipToStr(ip[3]);
+                        Long aLong = Long.valueOf(s1 + s2 + s3 + s4);
+                        ipData.setIpScopeStart(aLong);
+                    }
+                    if (split[7] != null) {
+                        String[] ip = split[7].split("\\.");
+                        String s1 = ipToStr(ip[0]);
+                        String s2 = ipToStr(ip[1]);
+                        String s3 = ipToStr(ip[2]);
+                        String s4 = ipToStr(ip[3]);
+                        Long aLong = Long.valueOf(s1 + s2 + s3 + s4);
+                        ipData.setIpScopeEnd(aLong);
+                    }
+                    ipData.setCreateTime(new Date());
+                }
+                ipDataList.add(ipData);
+                if (ipDataList.size() >= 2000) {
+                    insert++;
+                    ipDataDao.batchInert(ipDataList);
+                    ipDataList = new ArrayList<>();
+                    System.out.println("insert = " + insert + "  list=" + ipDataList);
+                }
+            }
+            insert++;
+            ipDataDao.batchInert(ipDataList);
+            System.out.println("insert = " + insert + "  list=" + ipDataList);
+            br.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String ipToStr(String num) {
+        if (num.length() == 1) {
+            return "00" + num;
+        }
+        if (num.length() == 2) {
+            return "0" + num;
+        }
+        return num;
+    }
 }
