@@ -105,9 +105,9 @@ public class UserController {
     }
 
     @RequestMapping("/getUserLoginLog")
-    public Result getUserLoginLog(HttpSession session) {
+    public Result getUserLoginLog(HttpSession session, Integer page, Integer limit) {
         User user = (User) session.getAttribute("user");
-        return userService.getUserLoginLog(user.getId());
+        return userService.getUserLoginLog(user.getId(), page, limit);
     }
 
 
@@ -245,7 +245,6 @@ public class UserController {
         result.setMsg("成功");
         result.setCount(9);
         result.setData(objects);
-
         return result;
     }
 

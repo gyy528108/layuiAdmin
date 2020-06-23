@@ -5,7 +5,7 @@ spring:
     prefix: classpath:/templates/
     suffix: .html
   profiles:
-    active: dev
+    active: test
   resources:
     static-locations: classpath:/templates,classpath:/static
 plaintext: lowi
@@ -16,5 +16,8 @@ logging:
     path: ./logs/admin
   config: classpath:logback-spring.xml
 mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto    #id自增
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #打印sql

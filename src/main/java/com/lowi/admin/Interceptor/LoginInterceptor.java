@@ -1,5 +1,6 @@
 package com.lowi.admin.Interceptor;
 
+import com.lowi.admin.config.ProfileConfig;
 import com.lowi.admin.entity.User;
 import com.lowi.admin.service.TestService;
 import org.slf4j.Logger;
@@ -63,6 +64,11 @@ public class LoginInterceptor implements HandlerInterceptor {
         try {
             //统一拦截（查询当前session是否存在user）(这里user会在每次登陆成功后，写入session)
             User user = (User) request.getSession().getAttribute("user");
+            String activeProfile = ProfileConfig.getActiveProfile();
+            if(activeProfile.equals("dev")){
+                user = new User();
+                user.setId(1);
+            }
             if (user == null) {
                 String requestType = request.getHeader("X-Requested-With");
                 if (requestType != null && requestType.equals("XMLHttpRequest")) {

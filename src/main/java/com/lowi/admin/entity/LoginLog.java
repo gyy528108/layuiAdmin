@@ -32,7 +32,7 @@ public class LoginLog implements Serializable {
     private Integer id;
 
     private Integer userId;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss",timezone = "Asia/Shanghai")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date loginTime;
 

@@ -3,6 +3,8 @@ package com.lowi.admin.service;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lowi.admin.dao.IpDataDao;
 import com.lowi.admin.dao.LoginLogDao;
 import com.lowi.admin.dao.UserDao;
@@ -14,11 +16,14 @@ import com.lowi.admin.utils.Md5Utils;
 import com.lowi.admin.utils.Result;
 import com.lowi.admin.utils.SendMailUtils;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +43,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 public class UserService {
+    private Logger logger = LoggerFactory.getLogger(UserService.class);
     @Autowired
     private UserDao userDao;
     @Autowired
@@ -123,6 +129,7 @@ public class UserService {
                 }
             }
             loginLog.setLoginAddr(ipAddr);
+            logger.info("登录地址-----------------" + ipAddr);
         }
         loginLog.setLoginTime(new Date());
         loginLog.setLoginIp(userDto.getLoginIp());
@@ -184,14 +191,16 @@ public class UserService {
         System.out.println("numbers = " + numbers);
     }
 
-    public Result getUserLoginLog(Integer id) {
-        LoginLog loginLog = new LoginLog();
-        loginLog.setUserId(id);
-        List<LoginLog> loginLogs = loginLogDao.selectList(new QueryWrapper<>(loginLog));
+    public Result getUserLoginLog(Integer id, Integer page, Integer limit) {
+        QueryWrapper<LoginLog> queryWrapper = new QueryWrapper<>();
+        Page<LoginLog> pageInfo = new Page<>(page, limit);
+        queryWrapper.select().eq("user_id", id).orderByDesc("login_time");
+        IPage<LoginLog> loginLogIPage = loginLogDao.selectPage(pageInfo, queryWrapper);
         Result responseResult = new Result();
         responseResult.setCode(0);
         responseResult.setMsg("获取成功");
-        responseResult.setData(loginLogs);
+        responseResult.setData(loginLogIPage.getRecords());
+        responseResult.setCount((int) loginLogIPage.getTotal());
         return responseResult;
     }
 }

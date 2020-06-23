@@ -1,9 +1,13 @@
 spring:
   datasource:
-    url: jdbc:mysql://10.10.10.188:3306/lowi?serverTimezone=GMT%2B8&amp&characterEncoding=utf-8
+    url: jdbc:mysql://localhost:3306/lowi?serverTimezone=GMT%2B8&amp&characterEncoding=utf-8
     username: root
-    password: lyx@20161111
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    port: 6379
+    password: 123456
+    host: 192.168.241.128
 mybatis-plus:
   mapper-locations: classpath:/mapper/*.xml
   type-aliases-package: com.lowi.admin.entity
@@ -14,4 +18,4 @@ mybatis-plus:
 
 
 
-localhostUrl: http://10.10.10.22:8122
+localhostUrl: http://47.105.83.61:8122
